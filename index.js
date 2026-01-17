@@ -1,5 +1,6 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
+const http = require('http');
 
 const token = process.env.BOT_TOKEN;
 const adminId = process.env.ADMIN_ID;
@@ -8,6 +9,17 @@ const cardNumber = process.env.CARD_NUMBER || '8600000000000000';
 const bot = new TelegramBot(token, { polling: true });
 
 const userOrders = {};
+
+// Render.com uchun kichik server (Port xatosi chiqmasligi uchun)
+const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Bot is running...\n');
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server ${PORT}-portda ishlamoqda`);
+});
 
 const menu = {
     '🌯 Lavash-klassika': 18000,

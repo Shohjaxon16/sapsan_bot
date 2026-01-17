@@ -41,7 +41,10 @@ bot.onText(/\/start/, (msg) => {
     console.log(`/start buyrug'i keldi: ${chatId}`);
     const firstName = msg.from.first_name;
 
-    const welcomeMsg = `Salom ${firstName}! 😊\nFast Food botimizga xush kelibsiz.\nNima buyurtma berasiz?`;
+    const isAdmin = adminId && chatId.toString() === adminId.toString();
+    let welcomeMsg = isAdmin
+        ? `Salom boshliq! 👑 Admin paneliga xush kelibsiz.\n\nSizga ham biror nima buyurtma qilaylikmi?`
+        : `Salom ${firstName}! 😊\nFast Food botimizga xush kelibsiz.\nNima buyurtma berasiz?`;
 
     const menuKeys = Object.keys(menu);
     const menuButtons = [];
@@ -83,10 +86,32 @@ bot.on('message', (msg) => {
     const text = msg.text;
     console.log(`Xabar keldi: [${chatId}] ${text || '[media]'}`);
 
+    // 1. Admin Reply Logic (Reply orqali javob yozish)
+    if (adminId && chatId.toString() === adminId.toString() && msg.reply_to_message) {
+        let targetId = null;
+        const replyText = msg.reply_to_message.text || msg.reply_to_message.caption || "";
+
+        const idMatch = replyText.match(/🆔 Chat ID: (\d+)/) || replyText.match(/\(Mijoz ID: (\d+)\)/);
+
+        if (idMatch) {
+            targetId = idMatch[1];
+            const adminText = msg.text;
+
+            if (adminText) {
+                bot.sendMessage(targetId, `🔔 Administrator xabari:\n\n${adminText}`)
+                    .then(() => bot.sendMessage(adminId, "✅ Xabaringiz mijozga yetkazildi."))
+                    .catch(err => bot.sendMessage(adminId, "❌ Yuborishda xato: " + err.message));
+                return; // Admin javob yozgan bo'lsa, boshqa logikaga o'tmaymiz
+            }
+        }
+    }
+
+    // 2. Buyruqlarni e'tiborsiz qoldirish
     if (text && (text === '/start' || text === '/id' || text === '/testadmin' || (typeof text === 'string' && text.startsWith('/ready')))) {
         return;
     }
 
+    // 3. Menu orqali taom tanlash
     if (menu[text]) {
         userOrders[chatId] = {
             item: text,
@@ -107,6 +132,7 @@ bot.on('message', (msg) => {
         return;
     }
 
+    // 4. Location qabul qilish
     if (msg.location && userOrders[chatId] && userOrders[chatId].status === 'waiting_location') {
         userOrders[chatId].location = msg.location;
         userOrders[chatId].status = 'waiting_payment';
@@ -124,6 +150,7 @@ bot.on('message', (msg) => {
         return;
     }
 
+    // 5. Buyurtmani bekor qilish tugmasi
     if (text === "❌ Buyurtmani bekor qilish" && userOrders[chatId]) {
         delete userOrders[chatId];
         const menuKeys = Object.keys(menu);
@@ -141,9 +168,9 @@ bot.on('message', (msg) => {
         return;
     }
 
+    // 6. To'lov cheki (pending_admin)
     if (userOrders[chatId] && userOrders[chatId].status === 'waiting_payment') {
         userOrders[chatId].status = 'pending_admin';
-
         bot.sendMessage(chatId, "Rahmat! Buyurtmangiz qabul qilindi. ✅\nAdministrator to'lovni tekshirib, buyurtma tayyor bo'lishi bilan sizga xabar beradi.");
 
         if (adminId) {
@@ -167,8 +194,6 @@ bot.on('message', (msg) => {
                 bot.sendPhoto(adminId, msg.photo[msg.photo.length - 1].file_id, { caption: `To'lov cheki: ${msg.from.first_name}` })
                     .catch(err => console.error(`Admin (@${adminId}) ga rasm yuborishda xatolik:`, err.message));
             }
-        } else {
-            console.warn('ADMIN_ID .env faylida ko\'rsatilmagan!');
         }
     }
 });
@@ -222,40 +247,16 @@ bot.on('callback_query', (query) => {
 
 bot.onText(/\/ready (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
-    if (chatId.toString() !== adminId.toString()) return;
+    if (adminId && chatId.toString() !== adminId.toString()) return;
 
     const targetCustomerChatId = match[1];
     const readyMsg = "Xushxabar! Sizning buyurtmangiz tayyor bo'ldi. 😋 Kelib olib ketishingiz yoki kuryerni kutishingiz mumkin.";
 
     bot.sendMessage(targetCustomerChatId, readyMsg)
         .then(() => {
-            bot.sendMessage(adminId, `Mijozga (ID: ${targetCustomerChatId}) "Tayyor" xabari yuborildi. ✅`);
+            bot.sendMessage(chatId, `Mijozga (ID: ${targetCustomerChatId}) "Tayyor" xabari yuborildi. ✅`);
         })
         .catch((err) => {
-            bot.sendMessage(adminId, "Xatolik yuz berdi: " + err.message);
+            bot.sendMessage(chatId, "Xatolik yuz berdi: " + err.message);
         });
-});
-
-bot.on('message', (msg) => {
-    const chatId = msg.chat.id;
-
-    // Admin Reply (Advanced logic)
-    if (chatId.toString() === adminId.toString() && msg.reply_to_message) {
-        let targetId = null;
-        const replyText = msg.reply_to_message.text || msg.reply_to_message.caption || "";
-
-        // E'lon yoki buyurtma xabaridan Chat ID ni qidiramiz
-        const idMatch = replyText.match(/🆔 Chat ID: (\d+)/) || replyText.match(/\(Mijoz ID: (\d+)\)/);
-
-        if (idMatch) {
-            targetId = idMatch[1];
-            const adminText = msg.text;
-
-            if (adminText) {
-                bot.sendMessage(targetId, `🔔 Administrator xabari:\n\n${adminText}`)
-                    .then(() => bot.sendMessage(adminId, "✅ Xabaringiz mijozga yetkazildi."))
-                    .catch(err => bot.sendMessage(adminId, "❌ Yuborishda xato: " + err.message));
-            }
-        }
-    }
 });

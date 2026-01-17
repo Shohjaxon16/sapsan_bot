@@ -42,9 +42,21 @@ bot.onText(/\/start/, (msg) => {
     const firstName = msg.from.first_name;
 
     const isAdmin = adminId && chatId.toString() === adminId.toString();
-    let welcomeMsg = isAdmin
-        ? `Salom boshliq! 👑 Admin paneliga xush kelibsiz.\n\nSizga ham biror nima buyurtma qilaylikmi?`
-        : `Salom ${firstName}! 😊\nFast Food botimizga xush kelibsiz.\nNima buyurtma berasiz?`;
+
+    if (isAdmin) {
+        return bot.sendMessage(chatId, `Salom boshliq! 👑 Boss panelga xush kelibsiz.\n\nBarcha buyurtmalarni o'chirib yuborish uchun: /clear yozing.`, {
+            reply_markup: {
+                keyboard: [
+                    [{ text: '🌯 Lavash-klassika' }, { text: '🥙 Lavash-pishloqli' }],
+                    [{ text: '🌭 Hot-dog-karalevski' }, { text: '🥖 Hot-dog-klassika' }],
+                    [{ text: '🥤 Coca-Cola 1L' }, { text: '☕️ Cofee' }]
+                ],
+                resize_keyboard: true
+            }
+        });
+    }
+
+    const welcomeMsg = `Salom ${firstName}! 😊\nFast Food botimizga xush kelibsiz.\nNima buyurtma berasiz?`;
 
     const menuKeys = Object.keys(menu);
     const menuButtons = [];
@@ -59,6 +71,19 @@ bot.onText(/\/start/, (msg) => {
             one_time_keyboard: true
         }
     }).catch(err => console.error(`Start xabari yuborishda xato:`, err.message));
+});
+
+bot.onText(/\/clear/, (msg) => {
+    const chatId = msg.chat.id;
+    if (adminId && chatId.toString() === adminId.toString()) {
+        Object.keys(userOrders).forEach(key => delete userOrders[key]);
+        bot.sendMessage(chatId, "Barcha faol buyurtmalar o'chirib tashlandi. ✅");
+    }
+});
+
+bot.onText(/\/checkadmin/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, `Sizning ID: <code>${chatId}</code>\nBotdagi ADMIN_ID: <code>${adminId || 'Topilmadi'}</code>\n\nMos kelyaptimi?`, { parse_mode: 'HTML' });
 });
 
 bot.onText(/\/id/, (msg) => {

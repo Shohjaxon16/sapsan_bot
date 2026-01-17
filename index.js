@@ -12,14 +12,14 @@ const userOrders = {};
 const menu = {
     '🌯 Lavash-klassika': 18000,
     '🥙 Lavash-pishloqli': 20000,
-    '🌭 Hot-dog': 20000,
+    '🌭 Hot-dog-karalevski': 20000,
     '🥖 Hot-dog-klassika': 15000,
     '🧀 Hot-dog-pishloqli': 22000,
     '🌮 Non-kabob': 13000,
-    '🥤 Coca-Cola': 12000,
-    '🥤 Fanta': 12000,
-    '🥤 Sprite': 12000,
-    '☕️ Choy': 5000,
+    '☕️ Cofee': 7000,
+    '🥤 Coca-Cola 1L': 12000,
+    '🥤 Fanta 1L': 12000,
+    '🥤 Shishali-Coca-Cola 0.5L': 5000,
 };
 
 console.log('Fast Food Bot ishga tushdi...');
@@ -138,9 +138,16 @@ bot.on('message', (msg) => {
             const location = userOrders[chatId].location;
             const locationLink = location ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : 'Yuborilmagan';
 
-            const orderDetails = `🆕 Yangi Buyurtma!\n\n👤 Mijoz: ${msg.from.first_name} ${msg.from.last_name || ''} (@${msg.from.username || 'username yo\'q'})\n🍔 Taom: ${userOrders[chatId].item}\n💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n📍 Manzil: <a href="${locationLink}">Google Maps</a>\n🆔 Chat ID: <code>${chatId}</code>\n\nJavob yozish uchun:\n1. <b>Tayyor:</b> /ready ${chatId}\n2. <b>Sizning xabaringiz:</b> /msg ${chatId} [xabar matni]`;
+            const orderDetails = `🆕 Yangi Buyurtma!\n\n👤 Mijoz: ${msg.from.first_name} ${msg.from.last_name || ''} (@${msg.from.username || 'username yo\'q'})\n🍔 Taom: ${userOrders[chatId].item}\n💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n📍 Manzil: <a href="${locationLink}">Google Maps</a>\n🆔 Chat ID: <code>${chatId}</code>\n\nJavob yozish uchun ushbu xabarga <b>Reply</b> qilib yozing.`;
 
-            bot.sendMessage(adminId, orderDetails, { parse_mode: 'HTML' })
+            bot.sendMessage(adminId, orderDetails, {
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "✅ Tayyor", callback_data: `ready_${chatId}` }]
+                    ]
+                }
+            })
                 .then(() => console.log(`Buyurtma xabari adminga yuborildi.`))
                 .catch(err => console.error(`Admin (@${adminId}) ga xabar yuborishda xatolik:`, err.message));
 
@@ -184,6 +191,21 @@ bot.on('callback_query', (query) => {
             bot.answerCallbackQuery(query.id, { text: "Bekor qilinadigan buyurtma topilmadi." });
         }
     }
+
+    if (data.startsWith('ready_')) {
+        const targetCustomerChatId = data.replace('ready_', '');
+        const readyMsg = "Xushxabar! Sizning buyurtmangiz tayyor bo'ldi. 😋 Kelib olib ketishingiz yoki kuryerni kutishingiz mumkin.";
+
+        bot.sendMessage(targetCustomerChatId, readyMsg)
+            .then(() => {
+                bot.answerCallbackQuery(query.id, { text: "Mijozga xabar yuborildi." });
+                bot.editMessageReplyMarkup({ inline_keyboard: [] }, { chat_id: chatId, message_id: query.message.message_id });
+                bot.sendMessage(chatId, `Mijozga (ID: ${targetCustomerChatId}) "Tayyor" xabari yuborildi. ✅`);
+            })
+            .catch((err) => {
+                bot.answerCallbackQuery(query.id, { text: "Xatolik: " + err.message });
+            });
+    }
 });
 
 bot.onText(/\/ready (.+)/, (msg, match) => {
@@ -202,18 +224,26 @@ bot.onText(/\/ready (.+)/, (msg, match) => {
         });
 });
 
-bot.onText(/\/msg (\d+) (.+)/, (msg, match) => {
+bot.on('message', (msg) => {
     const chatId = msg.chat.id;
-    if (chatId.toString() !== adminId.toString()) return;
 
-    const targetCustomerChatId = match[1];
-    const customText = match[2];
+    // Admin Reply (Advanced logic)
+    if (chatId.toString() === adminId.toString() && msg.reply_to_message) {
+        let targetId = null;
+        const replyText = msg.reply_to_message.text || msg.reply_to_message.caption || "";
 
-    bot.sendMessage(targetCustomerChatId, `🔔 Administrator xabari: \n\n${customText}`)
-        .then(() => {
-            bot.sendMessage(adminId, `Mijozga (ID: ${targetCustomerChatId}) xabar yuborildi. ✅`);
-        })
-        .catch((err) => {
-            bot.sendMessage(adminId, "Xabar yuborishda xatolik: " + err.message);
-        });
+        // E'lon yoki buyurtma xabaridan Chat ID ni qidiramiz
+        const idMatch = replyText.match(/🆔 Chat ID: (\d+)/) || replyText.match(/\(Mijoz ID: (\d+)\)/);
+
+        if (idMatch) {
+            targetId = idMatch[1];
+            const adminText = msg.text;
+
+            if (adminText) {
+                bot.sendMessage(targetId, `🔔 Administrator xabari:\n\n${adminText}`)
+                    .then(() => bot.sendMessage(adminId, "✅ Xabaringiz mijozga yetkazildi."))
+                    .catch(err => bot.sendMessage(adminId, "❌ Yuborishda xato: " + err.message));
+            }
+        }
+    }
 });

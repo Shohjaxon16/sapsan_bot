@@ -41,17 +41,13 @@ bot.onText(/\/start/, (msg) => {
     console.log(`/start buyrug'i keldi: ${chatId}`);
     const firstName = msg.from.first_name;
 
-    const isAdmin = adminId && chatId.toString() === adminId.toString();
+    // Admin tekshiruvi (bo'sh joylarsiz va raqam ko'rinishida)
+    const isAdmin = adminId && chatId.toString().trim() === adminId.toString().trim();
 
     if (isAdmin) {
-        return bot.sendMessage(chatId, `Salom boshliq! 👑 Boss panelga xush kelibsiz.\n\nBarcha buyurtmalarni o'chirib yuborish uchun: /clear yozing.`, {
+        return bot.sendMessage(chatId, `Salom boshliq! 👑 Boss panelga xush kelibsiz.`, {
             reply_markup: {
-                keyboard: [
-                    [{ text: '🌯 Lavash-klassika' }, { text: '🥙 Lavash-pishloqli' }],
-                    [{ text: '🌭 Hot-dog-karalevski' }, { text: '🥖 Hot-dog-klassika' }],
-                    [{ text: '🥤 Coca-Cola 1L' }, { text: '☕️ Cofee' }]
-                ],
-                resize_keyboard: true
+                remove_keyboard: true
             }
         });
     }
@@ -71,14 +67,6 @@ bot.onText(/\/start/, (msg) => {
             one_time_keyboard: true
         }
     }).catch(err => console.error(`Start xabari yuborishda xato:`, err.message));
-});
-
-bot.onText(/\/clear/, (msg) => {
-    const chatId = msg.chat.id;
-    if (adminId && chatId.toString() === adminId.toString()) {
-        Object.keys(userOrders).forEach(key => delete userOrders[key]);
-        bot.sendMessage(chatId, "Barcha faol buyurtmalar o'chirib tashlandi. ✅");
-    }
 });
 
 bot.onText(/\/checkadmin/, (msg) => {

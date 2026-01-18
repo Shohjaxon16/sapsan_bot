@@ -169,6 +169,17 @@ bot.on('message', (msg) => {
     }
 
     if (menu[text]) {
+        // Telefon raqami yo'q bo'lsa, davom ettirmaymiz
+        if (!userContacts[chatId]) {
+            return bot.sendMessage(chatId, `Iltimos, avval telefon raqamingizni yuboring. 😊`, {
+                reply_markup: {
+                    keyboard: [[{ text: "📞 Telefon raqamni yuborish", request_contact: true }]],
+                    resize_keyboard: true,
+                    one_time_keyboard: true
+                }
+            });
+        }
+
         userOrders[chatId] = {
             item: text,
             price: menu[text],

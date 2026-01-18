@@ -9,6 +9,7 @@ const cardNumber = process.env.CARD_NUMBER || '8600000000000000';
 const bot = new TelegramBot(token, { polling: true });
 
 const userOrders = {};
+const userContacts = {}; // Mijozlar telefon raqamlarini saqlash uchun
 
 // HTML belgilarini tozalash (Xatolik chiqmasligi uchun)
 function escapeHtml(text) {
@@ -46,6 +47,24 @@ const menu = {
 
 console.log('Fast Food Bot ishga tushdi...');
 
+function sendMenu(chatId, firstName) {
+    const welcomeMsg = `Salom ${firstName}! 😊\nFast Food botimizga xush kelibsiz.\nNima buyurtma berasiz?`;
+
+    const menuKeys = Object.keys(menu);
+    const menuButtons = [];
+    for (let i = 0; i < menuKeys.length; i += 2) {
+        menuButtons.push(menuKeys.slice(i, i + 2).map(item => ({ text: item })));
+    }
+
+    bot.sendMessage(chatId, welcomeMsg, {
+        reply_markup: {
+            keyboard: menuButtons,
+            resize_keyboard: true,
+            one_time_keyboard: true
+        }
+    }).catch(err => console.error(`Menu yuborishda xato:`, err.message));
+}
+
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     console.log(`/start buyrug'i keldi: ${chatId}`);
@@ -61,21 +80,35 @@ bot.onText(/\/start/, (msg) => {
         });
     }
 
-    const welcomeMsg = `Salom ${firstName}! 😊\nFast Food botimizga xush kelibsiz.\nNima buyurtma berasiz?`;
-
-    const menuKeys = Object.keys(menu);
-    const menuButtons = [];
-    for (let i = 0; i < menuKeys.length; i += 2) {
-        menuButtons.push(menuKeys.slice(i, i + 2).map(item => ({ text: item })));
+    // Agar telefon raqami bo'lmasa, so'raymiz
+    if (!userContacts[chatId]) {
+        return bot.sendMessage(chatId, `Salom ${firstName}! 😊 Botdan foydalanish uchun telefon raqamingizni yuboring.`, {
+            reply_markup: {
+                keyboard: [
+                    [{ text: "📞 Telefon raqamni yuborish", request_contact: true }]
+                ],
+                resize_keyboard: true,
+                one_time_keyboard: true
+            }
+        });
     }
 
-    bot.sendMessage(chatId, welcomeMsg, {
-        reply_markup: {
-            keyboard: menuButtons,
-            resize_keyboard: true,
-            one_time_keyboard: true
-        }
-    }).catch(err => console.error(`Start xabari yuborishda xato:`, err.message));
+    sendMenu(chatId, firstName);
+});
+
+bot.on('contact', (msg) => {
+    const chatId = msg.chat.id;
+    const phone = msg.contact.phone_number;
+    const firstName = msg.from.first_name;
+
+    userContacts[chatId] = phone;
+    console.log(`Telefon raqam qabul qilindi: ${chatId} -> ${phone}`);
+
+    bot.sendMessage(chatId, "Rahmat! Telefon raqamingiz qabul qilindi. ✅", {
+        reply_markup: { remove_keyboard: true }
+    }).then(() => {
+        sendMenu(chatId, firstName);
+    });
 });
 
 bot.onText(/\/checkadmin/, (msg) => {
@@ -106,6 +139,10 @@ bot.onText(/\/testadmin/, (msg) => {
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
+
+    // Kontakt xabari bo'lsa, uni boshqa handler (bot.on('contact')) boshqaradi
+    if (msg.contact) return;
+
     console.log(`Xabar keldi: [${chatId}] ${text || '[media]'}`);
 
     if (adminId && chatId.toString() === adminId.toString() && msg.reply_to_message) {
@@ -171,9 +208,11 @@ bot.on('message', (msg) => {
         if (adminId) {
             const firstName = escapeHtml(msg.from.first_name);
             const username = escapeHtml(msg.from.username || 'username yo\'q');
+            const phone = userContacts[chatId] || 'Yuborilmagan';
             const locationLink = `https://www.google.com/maps?q=${msg.location.latitude},${msg.location.longitude}`;
             const orderDetails = `⏳ Yangi Buyurtma (To'lov kutilmoqda)\n\n` +
                 `👤 Mijoz: <a href="tg://user?id=${chatId}">${firstName}</a> (@${username})\n` +
+                `📞 Tel: ${phone}\n` +
                 `🍔 Taom: ${userOrders[chatId].item}\n` +
                 `💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n` +
                 `📍 Manzil: <a href="${locationLink}">Google Maps</a>\n` +
@@ -220,12 +259,14 @@ bot.on('message', (msg) => {
             const firstName = escapeHtml(msg.from.first_name);
             const lastName = escapeHtml(msg.from.last_name || '');
             const username = escapeHtml(msg.from.username || 'username yo\'q');
+            const phone = userContacts[chatId] || 'Yuborilmagan';
 
             const location = userOrders[chatId].location;
             const locationLink = location ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : 'Yuborilmagan';
 
             const orderDetails = `✅ To'lov cheki (yoki xabar) keldi!\n\n` +
                 `👤 Mijoz: <a href="tg://user?id=${chatId}">${firstName} ${lastName}</a> (@${username})\n` +
+                `📞 Tel: ${phone}\n` +
                 `💬 Mijoz xabari: <i>${escapeHtml(customerMsg)}</i>\n` +
                 `🍔 Taom: ${userOrders[chatId].item}\n` +
                 `💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n` +

@@ -10,7 +10,6 @@ const bot = new TelegramBot(token, { polling: true });
 
 const userOrders = {};
 
-// Render.com uchun kichik server (Port xatosi chiqmasligi uchun)
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('Bot is running...\n');
@@ -41,7 +40,6 @@ bot.onText(/\/start/, (msg) => {
     console.log(`/start buyrug'i keldi: ${chatId}`);
     const firstName = msg.from.first_name;
 
-    // Admin tekshiruvi (bo'sh joylarsiz va raqam ko'rinishida)
     const isAdmin = adminId && chatId.toString().trim() === adminId.toString().trim();
 
     if (isAdmin) {
@@ -99,7 +97,6 @@ bot.on('message', (msg) => {
     const text = msg.text;
     console.log(`Xabar keldi: [${chatId}] ${text || '[media]'}`);
 
-    // 1. Admin Reply Logic (Reply orqali javob yozish)
     if (adminId && chatId.toString() === adminId.toString() && msg.reply_to_message) {
         let targetId = null;
         const replyText = msg.reply_to_message.text || msg.reply_to_message.caption || "";
@@ -114,17 +111,15 @@ bot.on('message', (msg) => {
                 bot.sendMessage(targetId, `🔔 Administrator xabari:\n\n${adminText}`)
                     .then(() => bot.sendMessage(adminId, "✅ Xabaringiz mijozga yetkazildi."))
                     .catch(err => bot.sendMessage(adminId, "❌ Yuborishda xato: " + err.message));
-                return; // Admin javob yozgan bo'lsa, boshqa logikaga o'tmaymiz
+                return;
             }
         }
     }
 
-    // 2. Buyruqlarni e'tiborsiz qoldirish
     if (text && (text === '/start' || text === '/id' || text === '/testadmin' || (typeof text === 'string' && text.startsWith('/ready')))) {
         return;
     }
 
-    // 3. Menu orqali taom tanlash
     if (menu[text]) {
         userOrders[chatId] = {
             item: text,
@@ -145,12 +140,10 @@ bot.on('message', (msg) => {
         return;
     }
 
-    // 4. Location qabul qilish
     if (msg.location && userOrders[chatId] && userOrders[chatId].status === 'waiting_location') {
         userOrders[chatId].location = msg.location;
         userOrders[chatId].status = 'waiting_payment';
 
-        // Keyboardni olib tashlash va to'lov xabarini yuborish
         bot.sendMessage(chatId, "Manzil qabul qilindi. ✅", {
             reply_markup: { remove_keyboard: true }
         }).then(() => {
@@ -162,7 +155,6 @@ bot.on('message', (msg) => {
             }).catch(err => console.error(`To'lov xabari yuborishda xato:`, err.message));
         }).catch(err => console.error(`Keyboard o'chirishda xato:`, err.message));
 
-        // Adminga xabar yuborish (To'lov kutilmoqda)
         if (adminId) {
             const locationLink = `https://www.google.com/maps?q=${msg.location.latitude},${msg.location.longitude}`;
             const orderDetails = `⏳ Yangi Buyurtma (To'lov kutilmoqda)\n\n👤 Mijoz: ${msg.from.first_name} ${msg.from.last_name || ''} (@${msg.from.username || 'username yo\'q'})\n🍔 Taom: ${userOrders[chatId].item}\n💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n📍 Manzil: <a href="${locationLink}">Google Maps</a>\n🆔 Chat ID: <code>${chatId}</code>`;
@@ -172,7 +164,6 @@ bot.on('message', (msg) => {
         return;
     }
 
-    // 5. Buyurtmani bekor qilish tugmasi
     if (text === "❌ Buyurtmani bekor qilish" && userOrders[chatId]) {
         const orderStatus = userOrders[chatId].status;
         const item = userOrders[chatId].item;
@@ -191,14 +182,12 @@ bot.on('message', (msg) => {
             }
         });
 
-        // Adminga xabar yuborish (agar buyurtma allaqachon adminga yuborilgan bo'lsa)
         if (adminId && (orderStatus === 'pending_admin' || orderStatus === 'waiting_payment')) {
             bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: ${msg.from.first_name} (@${msg.from.username || 'username yo\'q'})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' });
         }
         return;
     }
 
-    // 6. To'lov cheki (pending_admin)
     if (userOrders[chatId] && userOrders[chatId].status === 'waiting_payment') {
         userOrders[chatId].status = 'pending_admin';
         bot.sendMessage(chatId, "Rahmat! Buyurtmangiz qabul qilindi. ✅\nAdministrator to'lovni tekshirib, buyurtma tayyor bo'lishi bilan sizga xabar beradi.");
@@ -252,7 +241,10 @@ bot.on('callback_query', (query) => {
                 }
             });
             if (adminId && (orderStatus === 'pending_admin' || orderStatus === 'waiting_payment')) {
-                bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: ${query.from.first_name} (@${query.from.username || 'username yo\'q'})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' });
+                console.log(`Adminga bekor qilish xabari (callback) yuborilmoqda: ${adminId}`);
+                bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: ${query.from.first_name} (@${query.from.username || 'username yo\'q'})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' })
+                    .then(() => console.log("Adminga bekor qilish xabari (callback) yetib bordi."))
+                    .catch(err => console.error("Adminga bekor qilish xabarini yuborishda xato:", err.message));
             }
         } else {
             bot.answerCallbackQuery(query.id, { text: "Bekor qilinadigan buyurtma topilmadi." });

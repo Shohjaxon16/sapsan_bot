@@ -147,12 +147,14 @@ bot.on('message', (msg) => {
         bot.sendMessage(chatId, "Manzil qabul qilindi. ✅", {
             reply_markup: { remove_keyboard: true }
         }).then(() => {
-            const paymentMsg = `To'lovni amalga oshirish uchun quyidagi karta raqamiga pul o'tkazing:\n\n� Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n�💳 Karta: ${cardNumber}\n\nTo'lov qilgach, chekni (rasm yoki xabar) shu yerga yuboring.`;
-            bot.sendMessage(chatId, paymentMsg, {
-                reply_markup: {
-                    inline_keyboard: [[{ text: "❌ Buyurtmani bekor qilish", callback_data: 'cancel_order' }]]
-                }
-            }).catch(err => console.error(`To'lov xabari yuborishda xato:`, err.message));
+            setTimeout(() => {
+                const paymentMsg = `To'lovni amalga oshirish uchun quyidagi karta raqamiga pul o'tkazing:\n\n💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n💳 Karta: ${cardNumber}\n\nTo'lov qilgach, chekni (rasm yoki xabar) shu yerga yuboring.`;
+                bot.sendMessage(chatId, paymentMsg, {
+                    reply_markup: {
+                        inline_keyboard: [[{ text: "❌ Buyurtmani bekor qilish", callback_data: 'cancel_order' }]]
+                    }
+                }).catch(err => console.error(`To'lov xabari yuborishda xato:`, err.message));
+            }, 1000);
         }).catch(err => console.error(`Keyboard o'chirishda xato:`, err.message));
 
         if (adminId) {

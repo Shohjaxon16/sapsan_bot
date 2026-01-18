@@ -288,7 +288,7 @@ bot.on('callback_query', (query) => {
 
     if (data.startsWith('ready_')) {
         const targetCustomerChatId = data.replace('ready_', '');
-        const readyMsg = "Xushxabar! Sizning buyurtmangiz tayyor bo'ldi. 😋 Kelib olib ketishingiz yoki kuryerni kutishingiz mumkin.";
+        const readyMsg = "Xushxabar! Sizning buyurtmangiz tayyor bo'ldi. 😋 Kuryerni kutishingiz mumkin. Yana buyurtma berish uchun /start tugmasini bosing.";
 
         bot.sendMessage(targetCustomerChatId, readyMsg)
             .then(() => {
@@ -307,7 +307,7 @@ bot.onText(/\/ready (.+)/, (msg, match) => {
     if (adminId && chatId.toString() !== adminId.toString()) return;
 
     const targetCustomerChatId = match[1];
-    const readyMsg = "Xushxabar! Sizning buyurtmangiz tayyor bo'ldi. 😋 Kelib olib ketishingiz yoki kuryerni kutishingiz mumkin.";
+    const readyMsg = "Xushxabar! Sizning buyurtmangiz tayyor bo'ldi. 😋 Kuryerni kutishingiz mumkin. Yana buyurtma berish uchun /start tugmasini bosing.";
 
     bot.sendMessage(targetCustomerChatId, readyMsg)
         .then(() => {

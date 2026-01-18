@@ -183,7 +183,10 @@ bot.on('message', (msg) => {
         });
 
         if (adminId && (orderStatus === 'pending_admin' || orderStatus === 'waiting_payment')) {
-            bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: ${msg.from.first_name} (@${msg.from.username || 'username yo\'q'})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' });
+            console.log(`Adminga bekor qilish xabari yuborilmoqda: ${adminId}`);
+            bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: ${msg.from.first_name} (@${msg.from.username || 'username yo\'q'})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' })
+                .then(() => console.log("Adminga bekor qilish xabari yetib bordi."))
+                .catch(err => console.error("Adminga bekor qilish xabarini yuborishda xato:", err.message));
         }
         return;
     }

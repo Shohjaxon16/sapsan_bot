@@ -1,6 +1,7 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const http = require('http');
+const https = require('https');
 
 const token = process.env.BOT_TOKEN;
 const adminId = process.env.ADMIN_ID ? process.env.ADMIN_ID.toString().trim() : null;
@@ -9,9 +10,8 @@ const cardNumber = process.env.CARD_NUMBER || '8600000000000000';
 const bot = new TelegramBot(token, { polling: true });
 
 const userOrders = {};
-const userContacts = {}; // Mijozlar telefon raqamlarini saqlash uchun
+const userContacts = {};
 
-// HTML belgilarini tozalash (Xatolik chiqmasligi uchun)
 function escapeHtml(text) {
     if (!text) return '';
     return text.toString()
@@ -31,6 +31,18 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+// Render.com'da botni uyg'oq saqlash uchun o'z-o'ziga so'rov yuborish
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+if (RENDER_URL) {
+    setInterval(() => {
+        https.get(RENDER_URL, (res) => {
+            console.log(`Keep-alive ping yuborildi: ${res.statusCode}`);
+        }).on('error', (err) => {
+            console.error('Keep-alive xatosi:', err.message);
+        });
+    }, 13 * 60 * 1000); // Har 13 daqiqada (Render 15 daqiqada uxlab qoladi)
+}
 
 const menu = {
     '🌯 Lavash-klassika': 18000,
@@ -80,7 +92,6 @@ bot.onText(/\/start/, (msg) => {
         });
     }
 
-    // Agar telefon raqami bo'lmasa, so'raymiz
     if (!userContacts[chatId]) {
         return bot.sendMessage(chatId, `Salom ${firstName}! 😊 Botdan foydalanish uchun telefon raqamingizni yuboring.`, {
             reply_markup: {
@@ -140,7 +151,6 @@ bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
 
-    // Kontakt xabari bo'lsa, uni boshqa handler (bot.on('contact')) boshqaradi
     if (msg.contact) return;
 
     console.log(`Xabar keldi: [${chatId}] ${text || '[media]'}`);
@@ -169,7 +179,6 @@ bot.on('message', (msg) => {
     }
 
     if (menu[text]) {
-        // Telefon raqami yo'q bo'lsa, davom ettirmaymiz
         if (!userContacts[chatId]) {
             return bot.sendMessage(chatId, `Iltimos, avval telefon raqamingizni yuboring. 😊`, {
                 reply_markup: {

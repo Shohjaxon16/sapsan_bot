@@ -172,7 +172,12 @@ bot.on('message', (msg) => {
             const firstName = escapeHtml(msg.from.first_name);
             const username = escapeHtml(msg.from.username || 'username yo\'q');
             const locationLink = `https://www.google.com/maps?q=${msg.location.latitude},${msg.location.longitude}`;
-            const orderDetails = `⏳ Yangi Buyurtma (To'lov kutilmoqda)\n\n👤 Mijoz: ${firstName} (@${username})\n🍔 Taom: ${userOrders[chatId].item}\n💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n📍 Manzil: <a href="${locationLink}">Google Maps</a>\n🆔 Chat ID: <code>${chatId}</code>`;
+            const orderDetails = `⏳ Yangi Buyurtma (To'lov kutilmoqda)\n\n` +
+                `👤 Mijoz: <a href="tg://user?id=${chatId}">${firstName}</a> (@${username})\n` +
+                `🍔 Taom: ${userOrders[chatId].item}\n` +
+                `💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n` +
+                `📍 Manzil: <a href="${locationLink}">Google Maps</a>\n` +
+                `🆔 Chat ID: <code>${chatId}</code>`;
             bot.sendMessage(adminId, orderDetails, { parse_mode: 'HTML' })
                 .catch(err => console.error("Adminga yangi buyurtma xabari yuborishda xato:", err.message));
         }
@@ -200,7 +205,7 @@ bot.on('message', (msg) => {
         if (adminId && (orderStatus === 'pending_admin' || orderStatus === 'waiting_payment')) {
             const firstName = escapeHtml(msg.from.first_name);
             const username = escapeHtml(msg.from.username || 'username yo\'q');
-            bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: ${firstName} (@${username})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' })
+            bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: <a href="tg://user?id=${chatId}">${firstName}</a> (@${username})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' })
                 .catch(err => console.error("Adminga bekor qilish xabarini yuborishda xato:", err.message));
         }
         return;
@@ -220,7 +225,7 @@ bot.on('message', (msg) => {
             const locationLink = location ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : 'Yuborilmagan';
 
             const orderDetails = `✅ To'lov cheki (yoki xabar) keldi!\n\n` +
-                `👤 Mijoz: ${firstName} ${lastName} (@${username})\n` +
+                `👤 Mijoz: <a href="tg://user?id=${chatId}">${firstName} ${lastName}</a> (@${username})\n` +
                 `💬 Mijoz xabari: <i>${escapeHtml(customerMsg)}</i>\n` +
                 `🍔 Taom: ${userOrders[chatId].item}\n` +
                 `💰 Narxi: ${userOrders[chatId].price.toLocaleString()} so'm\n` +
@@ -273,7 +278,7 @@ bot.on('callback_query', (query) => {
             if (adminId && (orderStatus === 'pending_admin' || orderStatus === 'waiting_payment')) {
                 const firstName = escapeHtml(query.from.first_name);
                 const username = escapeHtml(query.from.username || 'username yo\'q');
-                bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: ${firstName} (@${username})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' })
+                bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: <a href="tg://user?id=${chatId}">${firstName}</a> (@${username})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' })
                     .catch(err => console.error("Adminga bekor qilish xabarini yuborishda xato:", err.message));
             }
         } else {

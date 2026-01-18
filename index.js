@@ -165,6 +165,9 @@ bot.on('message', (msg) => {
 
     // 5. Buyurtmani bekor qilish tugmasi
     if (text === "❌ Buyurtmani bekor qilish" && userOrders[chatId]) {
+        const orderStatus = userOrders[chatId].status;
+        const item = userOrders[chatId].item;
+
         delete userOrders[chatId];
         const menuKeys = Object.keys(menu);
         const menuButtons = [];
@@ -178,6 +181,11 @@ bot.on('message', (msg) => {
                 one_time_keyboard: true
             }
         });
+
+        // Adminga xabar yuborish (agar buyurtma allaqachon adminga yuborilgan bo'lsa)
+        if (orderStatus === 'pending_admin' && adminId) {
+            bot.sendMessage(adminId, `⚠️ Mijoz buyurtmani bekor qildi!\n\n👤 Mijoz: ${msg.from.first_name} (@${msg.from.username || 'username yo\'q'})\n🍔 Taom: ${item}\n🆔 Chat ID: <code>${chatId}</code>`, { parse_mode: 'HTML' });
+        }
         return;
     }
 

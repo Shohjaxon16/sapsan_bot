@@ -32,7 +32,6 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-// Render.com'da botni uyg'oq saqlash uchun o'z-o'ziga so'rov yuborish
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
 if (RENDER_URL) {
     setInterval(() => {
@@ -41,7 +40,7 @@ if (RENDER_URL) {
         }).on('error', (err) => {
             console.error('Keep-alive xatosi:', err.message);
         });
-    }, 13 * 60 * 1000); // Har 13 daqiqada (Render 15 daqiqada uxlab qoladi)
+    }, 13 * 60 * 1000);
 }
 
 const menu = {

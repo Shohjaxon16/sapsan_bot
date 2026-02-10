@@ -1,3 +1,4 @@
+// Oxirgi yangilanish: 2026-02-10
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const http = require('http');
